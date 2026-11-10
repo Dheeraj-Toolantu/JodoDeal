@@ -1,0 +1,55 @@
+rules_version = '2';
+
+// JodoDeal security rules.
+// Clients only READ. Every state change goes through Cloud Functions (Admin SDK),
+// which enforce business rules, idempotency and audit logging (BRD §12 Security, AC-13).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function isStaff() { return signedIn() && me().role in ['admin', 'support', 'operations']; }
+    function isOwner(data) { return signedIn() && data.uid == request.auth.uid; }
+    function isMerchantOf(data) { return signedIn() && me().role == 'merchant' && me().merchantId == data.merchantId; }
+    function canReadTxn(data) { return isOwner(data) || isMerchantOf(data) || isStaff(); }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isStaff());
+      allow write: if false;
+    }
+    match /categories/{id} { allow read: if true; allow write: if false; }
+    match /merchants/{id} { allow read: if true; allow write: if false; }
+    match /merchantPrivate/{id} {
+      allow read: if signedIn() && (resource.data.ownerUid == request.auth.uid || isStaff());
+      allow write: if false;
+    }
+    match /offers/{id} {
+      allow read: if resource.data.status in ['APPROVED', 'PAUSED'] || isMerchantOf(resource.data) || isStaff();
+      allow write: if false;
+    }
+    match /groups/{id} {
+      // Groups hold only counts, anonymous initials and terms — never member PII.
+      allow read: if true;
+      allow write: if false;
+      match /members/{uid} {
+        allow read: if signedIn() && (request.auth.uid == uid || isStaff());
+        allow write: if false;
+      }
+    }
+    match /reviews/{id} { allow read: if true; allow write: if false; }
+
+    match /payments/{id} { allow read: if isOwner(resource.data) || isStaff(); allow write: if false; }
+    match /orders/{id} { allow read: if canReadTxn(resource.data); allow write: if false; }
+    match /bookings/{id} { allow read: if canReadTxn(resource.data); allow write: if false; }
+    match /vouchers/{id} { allow read: if canReadTxn(resource.data); allow write: if false; }
+    match /shipments/{id} { allow read: if canReadTxn(resource.data); allow write: if false; }
+    match /refunds/{id} { allow read: if canReadTxn(resource.data); allow write: if false; }
+    match /cases/{id} { allow read: if canReadTxn(resource.data); allow write: if false; }
+    match /tickets/{id} { allow read: if isOwner(resource.data) || isStaff(); allow write: if false; }
+    match /notifications/{id} { allow read: if isOwner(resource.data); allow write: if false; }
+
+    match /auditLogs/{id} { allow read: if isStaff(); allow write: if false; }
+    match /paymentEvents/{id} { allow read: if isStaff(); allow write: if false; }
+    match /referrals/{id} { allow read: if isStaff(); allow write: if false; }
+    match /meta/{id} { allow read: if isStaff(); allow write: if false; }
+  }
+}
