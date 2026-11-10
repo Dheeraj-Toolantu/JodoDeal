@@ -21,7 +21,7 @@ export function AuthProvider({ children }) {
         return;
       }
       try {
-        await call('ensureProfile', { displayName: u.displayName });
+        await call('ensureProfile', { displayName: auth.takePendingName?.() || u.displayName });
         setBackendError(false);
       } catch (e) {
         console.error('ensureProfile failed', e);

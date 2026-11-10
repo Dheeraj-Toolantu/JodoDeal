@@ -1,5 +1,5 @@
 import { ArrowLeft, CheckCircle2, ClipboardList, Home, Lock, MapPin, ShieldCheck, Timer, XCircle } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ACTIVATION_RULES, FAILURE_POLICIES, FULFILMENT_META, PRICING_RULES, RESERVATION_MINUTES, TERMS_VERSION } from '@shared/constants.js';
@@ -28,7 +28,7 @@ export default function Checkout() {
   const { data: offer } = useDoc(group ? `offers/${group.offerId}` : null);
   const [optionId, setOptionId] = useState(null);
   const [qty, setQty] = useState(1);
-  const [addrId, setAddrId] = useState('new');
+  const [addrId, setAddrId] = useState(() => profile?.addresses?.find((a) => a.kind !== 'SERVICE')?.id || profile?.addresses?.[0]?.id || 'new');
   const [address, setAddress] = useState({ name: '', line1: '', line2: '', city: '', state: '', pincode: '', phone: '' });
   const [project, setProject] = useState({ pincode: '', propertyType: 'Apartment', rooms: '2BHK', notes: '', preferredDate: '' });
   const [pref, setPref] = useState({ preferredDate: '', notes: '' });
@@ -37,10 +37,28 @@ export default function Checkout() {
   const [idemKey] = useState(() => uuid());
 
   const savedAddresses = profile?.addresses || [];
+  // Pre-select the customer's saved address once the profile arrives.
+  useEffect(() => {
+    if (addrId === 'new' && savedAddresses.length && !address.line1) setAddrId(savedAddresses[0].id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedAddresses.length]);
   const effectiveOption = optionId || (offer?.options?.length === 1 ? offer.options[0].id : null);
   const unit = offer && group ? joinUnitPrice(offer, group, effectiveOption) : 0;
   const breakdown = useMemo(() => (offer ? priceBreakdown(offer, unit, qty) : null), [offer, unit, qty]);
-  const blocker = offer && group ? joinBlocker({ offer, group, optionId: effectiveOption }) : null;
+  const rawBlocker = offer && group ? joinBlocker({ offer, group, optionId: effectiveOption }) : null;
+  // Not having picked an option yet is a normal step, not an error — the hint by the Pay button covers it.
+  const blocker = rawBlocker === 'Please select an option.' ? null : rawBlocker;
+
+  const detailsIssue = (() => {
+    if (!offer) return null;
+    if (offer.fulfilment === 'PRODUCT') {
+      const a = addrId !== 'new' ? savedAddresses.find((x) => x.id === addrId) : address;
+      if (!a || !a.name || !a.line1 || !a.city || !a.phone) return 'Add your delivery address (name, address, city and mobile) to continue.';
+      if (!/^\d{6}$/.test(String(a.pincode || ''))) return 'Enter a valid 6-digit PIN code for delivery.';
+    }
+    if (offer.fulfilment === 'PROJECT' && !/^\d{6}$/.test(project.pincode)) return 'Enter the 6-digit PIN code of your project site.';
+    return null;
+  })();
 
   if (loading || (group && !offer)) return <PageLoader />;
   if (!group || !offer) return <div className="container-page py-16"><EmptyState icon={XCircle} title="Group not found" action={<Button to="/deals">Explore deals</Button>} /></div>;
@@ -267,7 +285,12 @@ export default function Checkout() {
                   <span className="font-display text-2xl font-extrabold">{formatINR(breakdown.total, true)}</span>
                 </div>
                 {breakdown.savings > 0 && <p className="mt-2 rounded-xl bg-emerald-50 px-3 py-2 text-center text-sm font-bold text-emerald-700">You save {formatINR(breakdown.savings)} vs standard price</p>}
-                <Button size="lg" className="mt-4 w-full" onClick={submit} loading={submitting} disabled={!!blocker || !effectiveOption || !accepted} icon={Lock}>
+                {(!effectiveOption || detailsIssue || !accepted) && !blocker && (
+                  <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800" role="status">
+                    {!effectiveOption ? `Choose your ${meta.optionLabel.toLowerCase()} above to continue.` : detailsIssue || 'Tick the box to accept the offer terms.'}
+                  </p>
+                )}
+                <Button size="lg" className="mt-4 w-full" onClick={submit} loading={submitting} disabled={!!blocker || !effectiveOption || !accepted || !!detailsIssue} icon={Lock}>
                   Proceed to pay
                 </Button>
                 <p className="mt-3 flex items-start gap-1.5 text-xs text-ink-500">

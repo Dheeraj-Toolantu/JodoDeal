@@ -5,7 +5,7 @@
 import { getAnalytics, isSupported as analyticsSupported } from 'firebase/analytics';
 import { initializeApp } from 'firebase/app';
 import { connectAuthEmulator, getAuth } from 'firebase/auth';
-import { connectFirestoreEmulator, initializeFirestore, persistentLocalCache } from 'firebase/firestore';
+import { connectFirestoreEmulator, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import { connectFunctionsEmulator, getFunctions } from 'firebase/functions';
 import { connectStorageEmulator, getStorage } from 'firebase/storage';
 
@@ -32,7 +32,7 @@ export function getFirebase() {
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   auth.languageCode = 'en';
-  const db = initializeFirestore(app, { localCache: persistentLocalCache() });
+  const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
   const functions = getFunctions(app, env.VITE_FIREBASE_FUNCTIONS_REGION || 'asia-south1');
   const storage = getStorage(app);
   if (env.VITE_USE_EMULATORS === 'true') {

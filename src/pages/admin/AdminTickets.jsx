@@ -45,7 +45,7 @@ export default function AdminTickets() {
               <Select className="!w-44 !py-1.5" value={active.status} onChange={(e) => call('updateTicket', { ticketId: active.id, status: e.target.value })}>
                 {['OPEN', 'IN_PROGRESS', 'ESCALATED', 'RESOLVED'].map((s) => <option key={s} value={s}>{s.replace('_', ' ').toLowerCase()}</option>)}
               </Select>
-              {active.orderId && <a className="font-semibold text-brand-600" href={`/g/${active.orderId}`} onClick={(e) => e.preventDefault()}>Order {active.orderId.slice(-8).toUpperCase()}</a>}
+              {active.orderId && <span className="font-semibold text-ink-700">Order #{active.orderId.slice(-8).toUpperCase()}</span>}
             </div>
             <TicketThread ticket={active} staff />
           </>

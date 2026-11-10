@@ -35,7 +35,17 @@ const sortLocal = (docs, opts) => {
   return [...docs].sort((a, b) => (a[field] === b[field] ? 0 : a[field] > b[field] ? m : -m));
 };
 
+// Name typed on the signup form, used when the server profile is created (the Auth
+// profile's displayName is only set after account creation, which races with sign-in).
+let pendingDisplayName = null;
+let recaptcha = null;
+
 export const firebaseAuth = {
+  takePendingName() {
+    const n = pendingDisplayName;
+    pendingDisplayName = null;
+    return n;
+  },
   onChange(cb) {
     return onAuthStateChanged(fb().auth, (u) => cb(u ? { uid: u.uid, email: u.email, phone: u.phoneNumber, displayName: u.displayName } : null));
   },
@@ -43,13 +53,27 @@ export const firebaseAuth = {
     await signInWithEmailAndPassword(fb().auth, email, password);
   },
   async signUp(email, password, displayName) {
+    pendingDisplayName = displayName || null;
     const cred = await createUserWithEmailAndPassword(fb().auth, email, password);
     if (displayName) await updateProfile(cred.user, { displayName });
   },
   async sendOtp(phone, recaptchaContainerId = 'recaptcha-container') {
-    const verifier = new RecaptchaVerifier(fb().auth, recaptchaContainerId, { size: 'invisible' });
-    const confirmation = await signInWithPhoneNumber(fb().auth, phone, verifier);
-    return { confirm: (code) => confirmation.confirm(code) };
+    // Re-create the invisible reCAPTCHA each time so "resend OTP" doesn't fail with
+    // "reCAPTCHA has already been rendered in this element".
+    try {
+      recaptcha?.clear();
+    } catch {
+      /* already cleared */
+    }
+    recaptcha = new RecaptchaVerifier(fb().auth, recaptchaContainerId, { size: 'invisible' });
+    try {
+      const confirmation = await signInWithPhoneNumber(fb().auth, phone, recaptcha);
+      return { confirm: (code) => confirmation.confirm(code) };
+    } catch (e) {
+      recaptcha.clear();
+      recaptcha = null;
+      throw e;
+    }
   },
   async signOut() {
     await fbSignOut(fb().auth);
@@ -79,6 +103,8 @@ export const firebaseData = {
     return onSnapshot(buildQuery(col, wheres, opts), (s) => cb(sortLocal(s.docs.map(toDoc), opts)), onError);
   },
   async uploadFile(file, folder = 'uploads') {
+    if (!/^image\//.test(file.type) && file.type !== 'application/pdf') throw new Error('Please upload an image (JPG, PNG, WebP) or a PDF.');
+    if (file.size > 5 * 1024 * 1024) throw new Error('File is too large — the maximum size is 5 MB.');
     const uid = fb().auth.currentUser?.uid || 'anon';
     const r = ref(fb().storage, `${folder}/${uid}/${Date.now()}-${file.name.replace(/[^\w.-]/g, '_')}`);
     await uploadBytes(r, file, { contentType: file.type });
