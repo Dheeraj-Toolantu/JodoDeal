@@ -80,6 +80,8 @@ export async function updateProfile(ctx, data, store) {
       const p = data.notificationPrefs;
       patch.notificationPrefs = { inSite: true, email: !!p.email, sms: !!p.sms, whatsapp: !!p.whatsapp, marketing: !!p.marketing, consentAt: nowISO() };
     }
+    if (Array.isArray(data.interests)) patch.interests = data.interests.map((x) => sanitizeText(x, 40)).filter(Boolean).slice(0, 14);
+    if (data.onboarded) patch.onboardedAt = user.onboardedAt || nowISO();
     tx.update(`users/${ctx.uid}`, patch);
     return { profile: { ...user, ...patch } };
   });

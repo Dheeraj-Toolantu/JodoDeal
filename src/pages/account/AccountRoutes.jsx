@@ -16,13 +16,13 @@ export default function AccountRoutes() {
   const { user } = useAuth();
   const { data: notes } = useQuery('notifications', [['uid', '==', user.uid], ['read', '==', false]]);
   const links = [
-    { to: '/account', end: true, label: 'Overview', icon: LayoutGrid },
-    { to: '/account/orders', label: 'Orders & bookings', icon: Package },
-    { to: '/account/vouchers', label: 'Vouchers & passes', icon: Ticket },
+    { to: '/account', end: true, label: 'Home', icon: LayoutGrid },
+    { to: '/account/orders', label: 'My orders', icon: Package },
+    { to: '/account/vouchers', label: 'My passes & codes', icon: Ticket },
     { to: '/account/refunds', label: 'Refunds', icon: ReceiptIndianRupee },
-    { to: '/account/support', label: 'Support', icon: LifeBuoy },
+    { to: '/account/support', label: 'Help', icon: LifeBuoy },
     { to: '/account/notifications', label: 'Notifications', icon: Bell, badge: notes.length || null },
-    { to: '/account/profile', label: 'Profile & addresses', icon: UserCircle },
+    { to: '/account/profile', label: 'Profile', icon: UserCircle },
   ];
   return (
     <PortalShell title="My account" icon={UserCircle} links={links}>

@@ -73,9 +73,16 @@ function MembershipSection({ booking, voucher }) {
         <p className="mt-2 text-xs text-ink-300">{voucher?.redemptions?.length ? `Activated ${formatDateTime(voucher.redemptions[0].at)}` : 'Not yet activated · single use'}</p>
       </CodeCard>
       <div className="grid gap-3 sm:grid-cols-3">
-        <KeyValue label="Activation rule" value={ACTIVATION_RULES[booking.activationRule]} className="flex-col !items-start rounded-xl bg-ink-50 p-3" />
-        <KeyValue label="Valid from" value={booking.validFrom ? formatDate(booking.validFrom) : 'On first visit'} className="flex-col !items-start rounded-xl bg-ink-50 p-3" />
-        <KeyValue label="Valid until" value={booking.validTo ? formatDate(booking.validTo) : `${booking.durationDays} days after activation`} className="flex-col !items-start rounded-xl bg-ink-50 p-3" />
+        {[
+          ['Activation', ACTIVATION_RULES[booking.activationRule]],
+          ['Valid from', booking.validFrom ? formatDate(booking.validFrom) : 'Your first visit'],
+          ['Valid until', booking.validTo ? formatDate(booking.validTo) : `${booking.durationDays} days after activation`],
+        ].map(([l, v]) => (
+          <div key={l} className="rounded-xl bg-ink-50 p-3">
+            <p className="text-xs text-ink-500">{l}</p>
+            <p className="mt-0.5 text-sm font-semibold">{v}</p>
+          </div>
+        ))}
       </div>
       {booking.address && (
         <p className="flex items-center gap-2 text-sm text-ink-600">
@@ -358,7 +365,7 @@ export default function OrderDetail() {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <OrderStatusBadge status={order.status} />
-              {booking && <BookingStatusBadge status={booking.status} />}
+              {booking && booking.status !== order.status && <BookingStatusBadge status={booking.status} />}
               <Badge>{meta.record}</Badge>
             </div>
             <h1 className="mt-2 font-display text-2xl font-extrabold">{order.offerTitle}</h1>

@@ -1,4 +1,4 @@
-import { BadgeCheck, CheckCircle2, Clock, Copy, Crown, Lock, MapPin, Share2, Star, Timer, TrendingDown, Users } from 'lucide-react';
+import { BadgeCheck, CheckCircle2, Copy, Crown, Lock, RefreshCcw, Share2, Star, Timer, TrendingDown, Users } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
@@ -182,7 +182,7 @@ export function TierLadder({ mrp, tiers, count = 0, minGroupSize }) {
   return (
     <ol className="space-y-2">
       <li className="flex items-center justify-between rounded-xl px-3 py-2 text-sm text-ink-400">
-        <span>Standard price</span>
+        <span>Normal price</span>
         <span className="line-through">{formatINR(mrp)}</span>
       </li>
       {sorted.map((t, i) => {
@@ -199,7 +199,7 @@ export function TierLadder({ mrp, tiers, count = 0, minGroupSize }) {
             <span className="flex items-center gap-2">
               {unlocked ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <Lock className="h-4 w-4 text-ink-300" />}
               <span className={cx('font-semibold', unlocked ? 'text-ink-900' : 'text-ink-500')}>
-                {t.minMembers === 1 ? 'Join now' : `${t.minMembers}+ members`}
+                {t.minMembers === 1 ? 'Any group size' : `${t.minMembers}+ people`}
               </span>
               {t.minMembers === minGroupSize && <Badge tone="brand" icon={Crown}>Target</Badge>}
             </span>
@@ -219,56 +219,70 @@ export function DealCard({ offer, group }) {
   const cat = categoryById(offer.categoryId);
   const g = group;
   const progress = g ? groupProgress(g) : null;
+  const now = g ? g.nextJoinPrice : best?.price;
   return (
-    <Link to={`/deal/${offer.id}`} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-soft ring-1 ring-ink-100/70 transition hover:-translate-y-1 hover:shadow-lift focus-visible:ring-4 focus-visible:ring-brand-200">
-      <CategoryArt categoryId={offer.categoryId} image={offer.images?.[0]} className="aspect-[16/10]">
-        <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
-          <span className="rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-ink-900 shadow-sm">{cat?.name}</span>
-        </div>
-        <div className="absolute right-3 top-3 rounded-full bg-emerald-500 px-2.5 py-1 text-xs font-extrabold text-white shadow">
-          Up to {discountPct(offer.mrp, best?.price)}% off
-        </div>
-        {g && (
-          <div className="absolute bottom-3 left-3 rounded-full bg-ink-950/70 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur">
-            <Clock className="mr-1 inline h-3 w-3" />
-            <Countdown deadline={g.deadline} compact className="!text-white" />
-          </div>
-        )}
+    <Link to={`/deal/${offer.id}`} className="group flex flex-col overflow-hidden rounded-2xl bg-white ring-1 ring-ink-100 transition hover:-translate-y-1 hover:shadow-lift focus-visible:ring-4 focus-visible:ring-brand-200">
+      <CategoryArt categoryId={offer.categoryId} image={offer.images?.[0]} className="aspect-[16/9]" iconClass="h-10 w-10">
+        <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-ink-800">{cat?.name}</span>
       </CategoryArt>
       <div className="flex flex-1 flex-col p-4">
-        <div className="mb-1 flex items-center justify-between gap-2 text-xs text-ink-500">
-          <span className="flex items-center gap-1 truncate">
-            <MapPin className="h-3.5 w-3.5 shrink-0" /> {offer.city}
-          </span>
-          <Rating value={offer.rating} count={offer.ratingCount} />
-        </div>
         <h3 className="line-clamp-2 font-display text-[15px] font-bold leading-snug text-ink-900 group-hover:text-brand-700">{offer.title}</h3>
         <p className="mt-1 flex items-center gap-1 text-xs text-ink-500">
-          {offer.merchantName} {offer.merchantVerified && <BadgeCheck className="h-3.5 w-3.5 text-emerald-500" />}
+          {offer.merchantName} {offer.merchantVerified && <BadgeCheck className="h-3.5 w-3.5 text-emerald-500" aria-label="Verified" />}
         </p>
-        <div className="mt-3 flex items-end gap-2">
-          <span className="font-display text-xl font-extrabold text-ink-900">{formatINR(best?.price)}</span>
-          <span className="pb-0.5 text-sm text-ink-400 line-through">{formatINR(offer.mrp)}</span>
-          <span className="pb-0.5 text-xs font-medium text-ink-500">at {best?.minMembers}+ members</span>
+        <div className="mt-3 flex items-baseline gap-2">
+          <span className="font-display text-xl font-extrabold text-ink-900">{formatINR(now)}</span>
+          <span className="text-sm text-ink-400 line-through">{formatINR(offer.mrp)}</span>
         </div>
-        <div className="mt-auto pt-3">
+        {best && now > best.price && (
+          <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-emerald-600">
+            <TrendingDown className="h-3.5 w-3.5" /> Drops to {formatINR(best.price)} as more join
+          </p>
+        )}
+        <div className="mt-auto pt-4">
           {g ? (
             <>
-              <div className="mb-1.5 flex justify-between text-xs font-semibold">
-                <span className="text-ink-700">
-                  <Users className="mr-1 inline h-3.5 w-3.5" />
-                  {g.paidCount}/{g.minGroupSize} joined
-                </span>
-                <span className={progress.remaining ? 'text-brand-600' : 'text-emerald-600'}>{progress.remaining ? `${progress.remaining} to go` : 'Unlocked ✓'}</span>
-              </div>
               <ProgressBar value={progress.pct} size="sm" tone={progress.remaining ? 'brand' : 'emerald'} />
+              <p className="mt-1.5 flex justify-between text-xs">
+                <span className="text-ink-600">{g.paidCount} of {g.minGroupSize} joined</span>
+                <span className={cx('font-semibold', progress.remaining ? 'text-brand-600' : 'text-emerald-600')}>{progress.remaining ? `${progress.remaining} more to unlock` : 'Unlocked ✓'}</span>
+              </p>
             </>
           ) : (
-            <p className="text-xs font-semibold text-brand-600">Start a group and invite friends →</p>
+            <p className="text-xs font-semibold text-brand-600">Start a group →</p>
           )}
         </div>
       </div>
     </Link>
+  );
+}
+
+/** Plain-language summary of how a specific deal works, using its real numbers. */
+export function DealExplainer({ offer, group }) {
+  const best = sortTiers(offer.tiers).at(-1);
+  const price = group ? group.nextJoinPrice : sortTiers(offer.tiers)[0]?.price;
+  const needed = group ? Math.max(0, group.minGroupSize - (group.paidCount || 0)) : offer.minGroupSize;
+  const deadline = group ? new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(group.deadline)) : null;
+  const rows = [
+    [Users, <>Join now for <b>{formatINR(price)}</b> + GST & fees.</>],
+    needed > 0
+      ? [CheckCircle2, <>When <b>{needed} more {needed === 1 ? 'person joins' : 'people join'}</b>, the deal is confirmed and you get your booking.</>]
+      : [CheckCircle2, <>This group has <b>already reached its target</b> — you're confirmed as soon as you pay.</>],
+    best && best.price < price ? [TrendingDown, <>If {best.minMembers}+ people join, the price drops to <b>{formatINR(best.price)}</b>.</>] : null,
+    [RefreshCcw, <>Not enough people{deadline ? ` by ${deadline}` : ''}? <b>Full refund</b>, automatically.</>],
+  ].filter(Boolean);
+  return (
+    <div className="rounded-2xl bg-brand-50/60 p-4 ring-1 ring-brand-100">
+      <p className="mb-2 text-sm font-bold text-ink-900">How this deal works</p>
+      <ul className="space-y-2">
+        {rows.map(([I, text], i) => (
+          <li key={i} className="flex gap-2.5 text-sm text-ink-700">
+            <I className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
+            <span>{text}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

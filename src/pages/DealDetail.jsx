@@ -29,7 +29,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { categoryById } from '@shared/categories.js';
 import { ACTIVATION_RULES, DEAL_FORMATS, FAILURE_POLICIES, FULFILMENT_META, PRICING_RULES, PROJECT_MILESTONES } from '@shared/constants.js';
 import { discountPct, groupProgress, optionAvailability, sortTiers } from '@shared/pricing.js';
-import { CategoryArt, Countdown, GroupProgressCard, GroupStateBadge, Rating, ShareBar, TierLadder, VerifiedBadge } from '@/components/deal.jsx';
+import { CategoryArt, Countdown, DealExplainer, GroupProgressCard, GroupStateBadge, Rating, ShareBar, TierLadder, VerifiedBadge } from '@/components/deal.jsx';
 import { Badge, Button, Card, EmptyState, PageLoader, ProgressBar, Tabs } from '@/components/ui.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { useDoc, useQuery } from '@/hooks/useData.js';
@@ -422,6 +422,15 @@ export default function DealDetail() {
             </div>
             <p className="mt-1 text-xs text-ink-400">+ GST {offer.gstRate}% & fees, shown in full before payment</p>
             <div className="mt-4">
+              <DealExplainer offer={offer} group={group} />
+            </div>
+            {group && (
+              <Button size="lg" to={`/checkout/${group.id}`} disabled={offer.status !== 'APPROVED'} className="mt-4 w-full">
+                Join this group · {formatINR(group.nextJoinPrice)}
+              </Button>
+            )}
+            <p className="mb-2 mt-5 text-sm font-bold">Price drops as more people join</p>
+            <div>
               <TierLadder mrp={offer.mrp} tiers={offer.tiers} count={group?.paidCount || 0} minGroupSize={offer.minGroupSize} />
             </div>
           </Card>
@@ -437,10 +446,8 @@ export default function DealDetail() {
                   <GroupStateBadge state={group.state} />
                 </div>
                 <GroupProgressCard group={group} offer={offer} />
-                <div className="mt-5 grid gap-2">
-                  <Button size="lg" to={`/checkout/${group.id}`} disabled={offer.status !== 'APPROVED'} className="w-full">
-                    Join this group · {formatINR(group.nextJoinPrice)}
-                  </Button>
+                <p className="mb-2 mt-5 text-sm font-semibold text-ink-700">Invite friends to unlock it faster</p>
+                <div className="grid gap-2">
                   <ShareBar offer={offer} group={group} referralCode={profile?.referralCode} />
                 </div>
               </>

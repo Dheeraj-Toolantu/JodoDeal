@@ -15,6 +15,7 @@ export default function OrderRow({ order, to }) {
         </div>
         <p className="mt-1 truncate font-semibold">{order.offerTitle}</p>
         <p className="truncate text-sm text-ink-500">{[order.optionLabel, order.merchantName].filter(Boolean).join(' · ')}</p>
+        {order.status === 'AWAITING_GROUP' && <p className="mt-0.5 text-xs font-semibold text-brand-600">Waiting for more people to join</p>}
       </div>
       <div className="text-right">
         <p className="font-display font-bold">{formatINR(order.amountPaid, true)}</p>

@@ -27,6 +27,7 @@ import { cx, relativeTime } from '@/lib/format.js';
 import { isDemoMode } from '@/lib/firebase.js';
 import { call } from '@/services/api.js';
 import Icon from './Icon.jsx';
+import WelcomeTour from './WelcomeTour.jsx';
 
 export function Logo({ light, className }) {
   return (
@@ -229,9 +230,6 @@ function Header() {
           <NavLink to="/how-it-works" className={nav}>
             How it works
           </NavLink>
-          <NavLink to="/partner" className={nav}>
-            For business
-          </NavLink>
         </nav>
         <HeaderSearch className="ml-auto hidden w-full max-w-xs md:block xl:max-w-sm" />
         <div className="ml-auto flex items-center gap-1 md:ml-2">
@@ -406,6 +404,7 @@ export default function Layout() {
       </main>
       <Footer />
       <MobileTabBar />
+      <WelcomeTour />
     </div>
   );
 }
