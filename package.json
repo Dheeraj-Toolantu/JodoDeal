@@ -1,0 +1,42 @@
+{
+  "name": "jododeal",
+  "private": true,
+  "version": "1.1.0",
+  "description": "JodoDeal - India-first social group-buying marketplace. Saath Kharido, Sabse Sasta Paao!",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "vitest run",
+    "sync-shared": "node scripts/sync-shared.mjs",
+    "emulators": "npm run sync-shared && firebase emulators:start",
+    "deploy": "npm run sync-shared && npm run build && firebase deploy"
+  },
+  "dependencies": {
+    "firebase": "^11.10.0",
+    "lucide-react": "^0.577.0",
+    "qrcode.react": "^4.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hot-toast": "^2.6.1",
+    "react-router-dom": "^6.30.1",
+    "recharts": "^2.15.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@vitejs/plugin-react": "^4.7.0",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.26",
+    "globals": "^15.15.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17",
+    "vite": "^6.4.6",
+    "vitest": "^3.2.7"
+  }
+}
