@@ -13,10 +13,14 @@ const TERMINAL_ORDER = ['CANCELLED', 'REFUNDED', 'COMPLETED', 'DELIVERED'];
 export async function runScheduledJobs(store, env = {}) {
   const now = env.now ? new Date(env.now) : new Date();
   const iso = now.toISOString();
+  // Single-field equality queries only, with the time check done in code, so the jobs need
+  // no composite Firestore indexes (pilot volumes are small; the in-transaction re-checks
+  // below remain the source of truth).
+  const due = (docs, field) => docs.filter((d) => d[field] && d[field] < iso);
   const summary = { holdsReleased: 0, groupsFailed: 0, groupsExtended: 0, consentRefunds: 0, groupsClosed: 0, groupsCompleted: 0 };
 
   // 1. Release expired seat/slot reservations.
-  const holds = await store.runTransaction((tx) => tx.query('payments', [['status', '==', 'CREATED'], ['expiresAt', '<', iso]], { limit: 200 }));
+  const holds = due(await store.runTransaction((tx) => tx.query('payments', [['status', '==', 'CREATED']], { limit: 500 })), 'expiresAt');
   for (const h of holds) {
     await store.runTransaction(async (tx) => {
       const payment = await tx.get(`payments/${h.id}`);
@@ -29,7 +33,7 @@ export async function runScheduledJobs(store, env = {}) {
   }
 
   // 2. Groups past deadline without reaching target.
-  const failing = await store.runTransaction((tx) => tx.query('groups', [['state', '==', 'OPEN'], ['deadline', '<', iso]], { limit: 100 }));
+  const failing = due(await store.runTransaction((tx) => tx.query('groups', [['state', '==', 'OPEN']], { limit: 500 })), 'deadline');
   for (const g of failing) {
     await store.runTransaction(async (tx) => {
       const group = await tx.get(`groups/${g.id}`);
@@ -77,7 +81,7 @@ export async function runScheduledJobs(store, env = {}) {
   }
 
   // 3. Extension consent windows that have closed — never assume acceptance.
-  const consentDue = await store.runTransaction((tx) => tx.query('groups', [['consentProcessed', '==', false], ['consentDeadline', '<', iso]], { limit: 100 }));
+  const consentDue = due(await store.runTransaction((tx) => tx.query('groups', [['consentProcessed', '==', false]], { limit: 500 })), 'consentDeadline');
   for (const g of consentDue) {
     summary.consentRefunds += await store.runTransaction(async (tx) => {
       const group = await tx.get(`groups/${g.id}`);
@@ -100,7 +104,7 @@ export async function runScheduledJobs(store, env = {}) {
 
   // 4. Confirmed groups past their deadline close; under ALL_MEMBERS pricing the best
   //    achieved tier is applied retroactively via price-drop refunds (never a surcharge).
-  const closing = await store.runTransaction((tx) => tx.query('groups', [['state', '==', 'CONFIRMED'], ['deadline', '<', iso]], { limit: 100 }));
+  const closing = due(await store.runTransaction((tx) => tx.query('groups', [['state', '==', 'CONFIRMED']], { limit: 500 })), 'deadline');
   for (const g of closing) {
     await store.runTransaction(async (tx) => {
       const group = await tx.get(`groups/${g.id}`);

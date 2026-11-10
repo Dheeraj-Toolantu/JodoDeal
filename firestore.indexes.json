@@ -1,8 +1,4 @@
 {
-  "indexes": [
-    { "collectionGroup": "payments", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "expiresAt", "order": "ASCENDING" }] },
-    { "collectionGroup": "groups", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "state", "order": "ASCENDING" }, { "fieldPath": "deadline", "order": "ASCENDING" }] },
-    { "collectionGroup": "groups", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "consentProcessed", "order": "ASCENDING" }, { "fieldPath": "consentDeadline", "order": "ASCENDING" }] }
-  ],
+  "indexes": [],
   "fieldOverrides": []
 }
