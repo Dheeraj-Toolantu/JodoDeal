@@ -14,7 +14,21 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isStaff());
-      allow write: if false;
+      // A user may create only their OWN profile, and only as a plain customer.
+      // Roles, merchant links and status can only be changed by Cloud Functions / admins.
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.uid == uid
+        && request.resource.data.role == 'customer'
+        && request.resource.data.merchantId == null
+        && request.resource.data.status == 'ACTIVE'
+        && request.resource.data.email == request.auth.token.get('email', null)
+        && request.resource.data.keys().hasOnly(['uid', 'displayName', 'email', 'phone', 'city', 'role', 'merchantId', 'status',
+             'referralCode', 'addresses', 'notificationPrefs', 'interests', 'onboardedAt', 'createdAt']);
+      // ...and edit only personal, non-privileged fields.
+      allow update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['displayName', 'phone', 'city', 'addresses', 'notificationPrefs', 'interests', 'onboardedAt']);
+      allow delete: if false;
     }
     match /categories/{id} { allow read: if true; allow write: if false; }
     match /merchants/{id} { allow read: if true; allow write: if false; }
