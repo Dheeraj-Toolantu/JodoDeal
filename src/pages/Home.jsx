@@ -158,6 +158,12 @@ export default function Home() {
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {loading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[340px]" />) : shown.map(({ offer, group }) => <DealCard key={offer.id} offer={offer} group={group} />)}
         </div>
+        {!loading && shown.length === 0 && (
+          <div className="rounded-2xl bg-white p-10 text-center ring-1 ring-ink-100">
+            <p className="font-display text-lg font-bold">New deals are coming soon 🚀</p>
+            <p className="mt-1 text-sm text-ink-500">We're onboarding verified gyms, teachers and sellers in {city}. Check back shortly!</p>
+          </div>
+        )}
         <div className="mt-6 text-center">
           <Button variant="secondary" to="/deals" icon={ArrowRight}>See all deals</Button>
         </div>

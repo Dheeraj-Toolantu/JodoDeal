@@ -14,6 +14,13 @@ export function RequireAuth({ children }) {
 export function RequireRole({ roles, children, fallback }) {
   const { user, profile, loading } = useAuth();
   const location = useLocation();
+  if (user && !profile && !loading) {
+    return (
+      <div className="container-page py-16">
+        <EmptyState icon={ShieldAlert} title="We couldn't load your account" description="The JodoDeal server is not reachable right now. Please try again in a few minutes." action={<Button onClick={() => window.location.reload()}>Try again</Button>} />
+      </div>
+    );
+  }
   if (loading || (user && !profile)) return <PageLoader />;
   if (!user) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />;
   if (!roles.includes(profile.role)) {

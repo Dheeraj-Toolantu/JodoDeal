@@ -2,6 +2,7 @@
  * Firebase initialisation. When no Firebase config is provided the app runs in
  * zero-config demo mode (see services/demoBackend.js).
  */
+import { getAnalytics, isSupported as analyticsSupported } from 'firebase/analytics';
 import { initializeApp } from 'firebase/app';
 import { connectAuthEmulator, getAuth } from 'firebase/auth';
 import { connectFirestoreEmulator, initializeFirestore, persistentLocalCache } from 'firebase/firestore';
@@ -17,6 +18,7 @@ export const firebaseConfig = {
   storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: env.VITE_FIREBASE_APP_ID,
+  measurementId: env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 export const isFirebaseConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId) && env.VITE_DEMO_MODE !== 'true';
@@ -39,6 +41,14 @@ export function getFirebase() {
     connectFunctionsEmulator(functions, '127.0.0.1', 5001);
     connectStorageEmulator(storage, '127.0.0.1', 9199);
   }
-  services = { app, auth, db, functions, storage };
+  services = { app, auth, db, functions, storage, analytics: null };
+  // Google Analytics (GA4) — only in real browsers that support it, never against emulators.
+  if (firebaseConfig.measurementId && env.VITE_USE_EMULATORS !== 'true') {
+    analyticsSupported()
+      .then((ok) => {
+        if (ok) services.analytics = getAnalytics(app);
+      })
+      .catch(() => {});
+  }
   return services;
 }

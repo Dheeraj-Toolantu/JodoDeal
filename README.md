@@ -24,20 +24,34 @@ Open http://localhost:5173. Without Firebase config the app runs in **demo mode*
 
 Password for all: `Demo@1234`. Mobile OTP login works with any 10-digit number; demo OTP is `123456`. The login page has one-click buttons for each account.
 
-## Run with Firebase
+## Run with Firebase (project `jododeal-b845b`)
 
-1. Create a Firebase project and enable **Authentication** (Email/Password + Phone), **Firestore**, **Storage**, **Functions** (Blaze plan).
-2. `cp .env.example .env.local` and fill in the web app config.
-3. Deploy:
+The web config for project **jododeal-b845b** is already in `.env`, so `npm run dev` and `npm run build` use Firebase, including Google Analytics (`G-FQZ9R9BH8Z`). To use the in-browser demo instead, create `.env.local` containing `VITE_DEMO_MODE=true`.
+
+**One-time setup in the [Firebase console](https://console.firebase.google.com/project/jododeal-b845b):**
+
+1. **Upgrade to the Blaze plan.** Cloud Functions and the 5-minute scheduler require it.
+2. **Authentication → Get started:**
+   - Enable the **Email/Password** and **Phone** sign-in providers.
+   - Under *Settings → Authorized domains*, add the domains you will serve from (`localhost` is already listed).
+3. **Firestore Database → Create database** in production mode. `asia-south1 (Mumbai)` is recommended because it matches the Functions region. The rules in this repo get deployed in step 5.
+4. **Storage → Get started** (same location).
+5. **Deploy from your machine:**
    ```bash
    npm install && (cd functions && npm install)
    npx firebase-tools login
-   npx firebase-tools use <your-project-id>
+   cp functions/.env.example functions/.env    # put your admin email(s) in ADMIN_EMAILS
    npx firebase-tools functions:secrets:set PAYMENT_WEBHOOK_SECRET
-   npm run deploy
+   npm run deploy                               # rules, indexes, functions, hosting
    ```
-4. Set `ADMIN_EMAILS` (comma-separated) in `functions/.env` so those users become admins on first sign-in, or run `node functions/scripts/set-admin.mjs <uid>`.
-5. Set `ENABLE_MOCK_GATEWAY=false` in production once the real payment gateway calls `paymentWebhook`.
+6. Sign in on the site with an email listed in `ADMIN_EMAILS`; that account becomes the admin. Merchants register via **Sell on JodoDeal**, and you verify them and approve their offers in the Admin console.
+7. **Optional, for pilot testing only:** load the sample catalogue into the live project. This also creates the demo accounts with the shared demo password, so delete them before a public launch.
+   ```bash
+   cd functions && SEED_ALLOW_PROD=yes GOOGLE_CLOUD_PROJECT=jododeal-b845b npm run seed
+   ```
+   This needs `gcloud auth application-default login`, or `GOOGLE_APPLICATION_CREDENTIALS` pointing to a service-account key.
+
+Keep `ENABLE_MOCK_GATEWAY=true` until a real payment gateway is integrated, then set it to `false`.
 
 ### Local emulators
 
