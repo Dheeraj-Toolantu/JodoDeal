@@ -11,3 +11,10 @@ ui-debug.log*
 coverage
 *.log
 .DS_Store
+
+# Never commit service-account keys
+*firebase-adminsdk*.json
+serviceAccount*.json
+service-account*.json
+.secret.local
+functions/.env
